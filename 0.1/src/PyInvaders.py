@@ -19,13 +19,15 @@ import camera
 
 VERSION = '0.1'
 
-ICON_FILE = u'C:\\Data\\Images\\Pictures\\carman_icons.mif'
-SPLASH_FILE = u'C:\\Data\\Images\\Pictures\\splash.jpg'
-TARGET_IMG_FILE = u'C:\\Data\\Images\\Pictures\\target.PNG'
-UFO_IMG_FILE = u'C:\\Data\\Images\\Pictures\\ufo2.PNG'
-TOP_IMG_FILE = u'C:\\Data\\Images\\Pictures\\top2.jpg'
-BOTTON_IMG_FILE = u'C:\\Data\\Images\\Pictures\\bottom2.jpg'
-SHOT_IMG_FILE = u'C:\\Data\\Images\\Pictures\\ray.PNG'
+ICON_FILE = u'E:\\Python\\res\\carman_icons.mif'
+SPLASH_FILE = u'E:\\Python\\res\\splash.jpg'
+TARGET_IMG_FILE = u'E:\\Python\\res\\target.PNG'
+UFO_IMG_FILE = u'E:\\Python\\res\\ufo2.PNG'
+TOP_IMG_FILE = u'E:\\Python\\res\\top2.jpg'
+BOTTON_IMG_FILE = u'E:\\Python\\res\\botton2.jpg'
+SHOT_IMG_FILE = u'E:\\Python\\res\\ray.PNG'
+
+RGB_BLACK = (0, 0, 0)
 
 buf = None
 canvas = None
@@ -47,8 +49,8 @@ def handle_redraw(dummy=(0, 0, 0, 0)):
 def handle_camera(img):
 	if not img:
 		return
-	canvas.blit(img,target= layerGroup["cameraPosition"])
-
+	buf.blit(img,target=layerGroup["cameraPosition"])
+	handle_redraw(())
 
 class SplashScreen(object):
 	def __init__(self):
@@ -89,10 +91,12 @@ class GameLogic(object):
 		self.ufosCountDown = 0
 		self.totalUfosLevel = 10
 		self.level = 1
-	
-	def newGame(self):
-		pass
-	 
+		
+	def startGame(self):
+		gg.drawMain()
+		gg.start_camera()
+		
+		
 class GameGraphics(object):
 	def __init__(self):
 		#Initialize the components
@@ -102,8 +106,19 @@ class GameGraphics(object):
 		self.bottonImg =  graphics.Image.open(BOTTON_IMG_FILE)
 		self.shotImg =  graphics.Image.open(SHOT_IMG_FILE)
 		
+	
+	def drawCockpit(self):
+		buf.blit(self.topImg)
+		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))
+		#position of the target img.
+		#((cameraWidth / 2 - targetSprite.getWidth() / 2) + cameraX, (cameraHeight / 2 - targetSprite.getHeight() / 2) + cameraY);
+		
 	def start_camera(self):
-		camera.start_finder(handle_camera,size=layerGroup["camera"])
+		camera.start_finder(handle_camera,size=layerGroup["cameraSize"])
+	
+	def drawMain(self):
+		buf.clear(RGB_BLACK)
+		self.drawCockpit()
 		
 class Main(object):
 	def __init__(self):	
@@ -137,10 +152,12 @@ class Main(object):
 		appuifw.app.exit_key_handler = self.handle_quit
 		self.game_start()
 		
-		
 	
 	def newGame(self):
-		game.newGame()
+		appuifw.app.exit_key_handler = self.handle_quit
+		appuifw.app.screen = 'full'
+		appuifw.app.body = canvas
+		game.startGame()
 	
 	def showInstructions(self):
 		pass
@@ -159,7 +176,7 @@ class Main(object):
 	
 	def handle_quit(self):
 		app_lock.signal()
-		appuifw.app.set_exit()
+		#appuifw.app.set_exit()
 		
 	def show_menu(self):
 		appuifw.app.screen = 'normal'
