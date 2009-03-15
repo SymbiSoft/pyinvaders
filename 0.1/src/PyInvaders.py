@@ -16,6 +16,8 @@ import appuifw
 import graphics
 import e32
 import camera
+import random
+import time
 
 VERSION = '0.1'
 
@@ -40,6 +42,8 @@ gg = None
 shotImg = None
 trans_shotImg  = None
 targetImg = None
+ufoImg = None
+
 
 #Bool
 DRAWING = False
@@ -64,6 +68,21 @@ def handle_camera(img):
 		buf.blit(trans_shotImg,target=(screenSize[0]/2 - shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - shotImg.size[1]))
 		buf.blit(shotImg,target=(screenSize[0]/2 - shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - shotImg.size[1]))	
 	handle_redraw(())
+
+	
+class Ufo(object):
+		def __init__(self,maxFarAwayXFromTarget,maxFarAwayYFromTarget,minFarAwayFromTarget,maxUFOSpeed):
+			self.maxFarAwayXFromTarget = random.randrange(0,maxFarAwayXFromTarget) + minFarAwayFromTarget
+			self.maxFarAwayYFromTarget = random.randrange(0,maxFarAwayYFromTarget) + minFarAwayFromTarget
+			self.minFarAwayFromTarget = minFarAwayFromTarget
+			self.frameWidth,self.frameHeight  = ufoImg.size[0]/8 , ufoImg.size[1]
+			print self.frameWidth,self.frameHeight
+			self.isAlive = True
+			self.speed = 0
+			while self.speed == 0:
+				self.speed = random.randrange(0,maxUFOSpeed)
+			self.aliveFrameSequence = [0,2,1]
+			
 
 class SplashScreen(object):
 	def __init__(self):
@@ -104,29 +123,38 @@ class GameLogic(object):
 		self.ufosCountDown = 0
 		self.totalUfosLevel = 10
 		self.level = 1
+		self.maxUfoScreen = 5
+		self.maxUFOSpeed = 4
+		self.minFarAwayFromTarget = 20;
+		self.maxFarAwayXFromTarget = 100;
+		self.maxFarAwayYFromTarget = 60;
+		self.ufoList = []
+	
+	def createUfos(self):
+		for i in range(self.maxUfoScreen):
+			self.ufoList.append(Ufo(self.maxFarAwayXFromTarget,self.maxFarAwayYFromTarget,self.minFarAwayFromTarget,self.maxUFOSpeed))
 		
 	def startGame(self):
+		self.createUfos()
 		gg.drawMain()
 		gg.start_camera()
-		
-		
+	
+	
 class GameGraphics(object):
 	def __init__(self):
-		global shotImg, trans_shotImg, targetImg
+		global shotImg, trans_shotImg, targetImg, ufoImg
 		#Initialize the components
-		self.ufoImg =  graphics.Image.open(UFO_IMG_FILE)
 		self.topImg =  graphics.Image.open(TOP_IMG_FILE)
 		self.bottonImg =  graphics.Image.open(BOTTON_IMG_FILE)
 		#Dealing with shot images is different from the others.
 		shotImg =  graphics.Image.open(SHOT_IMG_FILE)
 		trans_shotImg = shotImg.transpose(graphics.FLIP_LEFT_RIGHT)
 		targetImg = graphics.Image.open(TARGET_IMG_FILE)
-		
+		ufoImg =  graphics.Image.open(UFO_IMG_FILE)
 	
 	def drawCockpit(self):
 		buf.blit(self.topImg)
-		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))
-		
+		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))	
 		
 	def start_camera(self):
 		camera.start_finder(handle_camera,size=layerGroup["cameraSize"])
