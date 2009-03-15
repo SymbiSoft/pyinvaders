@@ -36,6 +36,14 @@ screenSize = None
 game = None
 gg = None
 
+#Cenario images
+shotImg = None
+trans_shotImg  = None
+targetImg = None
+
+#Bool
+DRAWING = False
+
 layerGroup = {"cameraSize": (240,180),
 			  "cameraPosition": (0,40)}
 
@@ -49,7 +57,12 @@ def handle_redraw(dummy=(0, 0, 0, 0)):
 def handle_camera(img):
 	if not img:
 		return
+	
 	buf.blit(img,target=layerGroup["cameraPosition"])
+	buf.blit(targetImg,target=((layerGroup["cameraSize"][0]/2 - targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - targetImg.size[1]/2) + layerGroup["cameraPosition"][1]))
+	if DRAWING:
+		buf.blit(trans_shotImg,target=(screenSize[0]/2 - shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - shotImg.size[1]))
+		buf.blit(shotImg,target=(screenSize[0]/2 - shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - shotImg.size[1]))	
 	handle_redraw(())
 
 class SplashScreen(object):
@@ -99,19 +112,21 @@ class GameLogic(object):
 		
 class GameGraphics(object):
 	def __init__(self):
+		global shotImg, trans_shotImg, targetImg
 		#Initialize the components
-		self.targetImg = graphics.Image.open(TARGET_IMG_FILE)
 		self.ufoImg =  graphics.Image.open(UFO_IMG_FILE)
 		self.topImg =  graphics.Image.open(TOP_IMG_FILE)
 		self.bottonImg =  graphics.Image.open(BOTTON_IMG_FILE)
-		self.shotImg =  graphics.Image.open(SHOT_IMG_FILE)
+		#Dealing with shot images is different from the others.
+		shotImg =  graphics.Image.open(SHOT_IMG_FILE)
+		trans_shotImg = shotImg.transpose(graphics.FLIP_LEFT_RIGHT)
+		targetImg = graphics.Image.open(TARGET_IMG_FILE)
 		
 	
 	def drawCockpit(self):
 		buf.blit(self.topImg)
 		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))
-		#position of the target img.
-		#((cameraWidth / 2 - targetSprite.getWidth() / 2) + cameraX, (cameraHeight / 2 - targetSprite.getHeight() / 2) + cameraY);
+		
 		
 	def start_camera(self):
 		camera.start_finder(handle_camera,size=layerGroup["cameraSize"])
