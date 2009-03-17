@@ -43,12 +43,16 @@ ufoList = None
 
 #Drawing
 ufoImg = None
+targetImg = None
+
 
 #Bool
 DRAWING = False
+FIRST_TIME = True
 
 layerGroup = {"cameraSize": (240,180),
-			  "cameraPosition": (0,40)}
+			  "cameraPosition": (0,40),
+			  "sideImageTracking":(100,100)}
 
 
 
@@ -57,13 +61,44 @@ def handle_redraw(dummy=(0, 0, 0, 0)):
         return
     canvas.blit(buf)
 
-def handle_camera(img):
+# Snippet code based on http://larndham.net/service/pys60/getpixel.py
+def getPixels(im, bpp=24):
+    import struct, zlib
+    im.save('C:\\pixels.png', bpp=bpp, compression='no')
+    f = open('C:\\pixels.png', 'rb')
+    f.seek(8+8+13+4)
+    chunk = []
+    while 1:
+        n = struct.unpack('>L', f.read(4))[0]
+        if n==0: break  # 'IEND' chunk
+        f.read(4) # 'IDAT'
+        chunk.append(f.read(n))
+        f.read(4)   # CRC
+    f.close()
+    return zlib.decompress(''.join(chunk))
+
+
+def run(img):
+	global FIRST_TIME
 	if not img:
 		return
+	
+	#@TODO : Check if it's to blit the box with all game image (buf) or all camera image (img).
+	box = graphics.Image.new(layerGroup["sideImageTracking"], 'L')
+	x = (layerGroup["cameraSize"][0]/2) - (targetImg.size[0]/2) - layerGroup["sideImageTracking"][0]
+	y = (layerGroup["cameraSize"][1]/2) - (layerGroup["sideImageTracking"][1] /2) 
+	if FIRST_TIME:
+		print x,y
+		print x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1]
+		FIRST_TIME = False
+	
+	box.blit(img, source=((x,y),(x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1])))
+	data = getPixels(box, 8)
 	buf.blit(img,target=layerGroup["cameraPosition"])
 	gg.drawTarget()
 	gg.drawShot()
-	gg.drawUfo(ufoList[0])
+	
+	#gg.drawUfo(ufoList[0])
 	handle_redraw(())
 
 	
@@ -143,19 +178,19 @@ class GameLogic(object):
 	def startGame(self):
 		self.createUfos()
 		gg.drawMain()
-		gg.start_camera()
+		gg.start_camera()			
 	
 	
 class GameGraphics(object):
 	def __init__(self):
-		global  ufoImg
+		global  ufoImg,targetImg
 		#Initialize the components
 		self.topImg =  graphics.Image.open(TOP_IMG_FILE)
 		self.bottonImg =  graphics.Image.open(BOTTON_IMG_FILE)
 		#Dealing with shot images is different from the others.
 		self.shotImg =  graphics.Image.open(SHOT_IMG_FILE)
 		self.trans_shotImg = self.shotImg.transpose(graphics.FLIP_LEFT_RIGHT)
-		self.targetImg = graphics.Image.open(TARGET_IMG_FILE)
+		targetImg = graphics.Image.open(TARGET_IMG_FILE)
 		ufoImg =  graphics.Image.open(UFO_IMG_FILE)
 	
 	def drawCockpit(self):
@@ -167,10 +202,10 @@ class GameGraphics(object):
 		buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
 			
 	def start_camera(self):
-		camera.start_finder(handle_camera,size=layerGroup["cameraSize"])
+		camera.start_finder(run,size=layerGroup["cameraSize"])
 	
 	def drawTarget(self):
-		buf.blit(self.targetImg,target=((layerGroup["cameraSize"][0]/2 - self.targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - self.targetImg.size[1]/2) + layerGroup["cameraPosition"][1]))
+		buf.blit(targetImg,target=((layerGroup["cameraSize"][0]/2 - targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - targetImg.size[1]/2) + layerGroup["cameraPosition"][1]))
 	
 	def drawShot(self):
 		if DRAWING:
