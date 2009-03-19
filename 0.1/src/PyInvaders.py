@@ -1,12 +1,24 @@
 '''
-PyInvaders - PyS60 Camera Tracking Game
+PyInvaders v0.1 - PyS60 Camera Tracking Game
 
 Marcel Pinheiro Caraciolo <caraciol@gmail.com>
 Marlon Luz <marlon.luz@gmail.com> (Author of the JavaME Real Invaders Game)
 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
 
 0.1  2009-02-19 Initial Creation.
 '''
+
 
 #@TODO :  SoftKey Labels, transparency gifs, Ufo threading, 
 
@@ -32,6 +44,8 @@ SHOT_IMG_FILE = u'E:\\Python\\res\\ray.PNG'
 RGB_BLACK = (0, 0, 0)
 RGB_WHITE = (255,255,255)
 
+WIN,LOST = 1,0
+
 #Instances
 buf = None
 canvas = None
@@ -40,6 +54,10 @@ screenSize = None
 game = None
 gg = None
 ufoList = None
+timer = None
+timeGame = None
+firstCurrentTime = None
+lastShotTime = None
 
 #Drawing
 ufoImg = None
@@ -61,6 +79,7 @@ def handle_redraw(dummy=(0, 0, 0, 0)):
         return
     canvas.blit(buf)
 
+	
 # Snippet code based on http://larndham.net/service/pys60/getpixel.py
 def getPixels(im, bpp=24):
     import struct, zlib
@@ -79,26 +98,34 @@ def getPixels(im, bpp=24):
 
 
 def run(img):
-	global FIRST_TIME
+	global FIRST_TIME, firstCurrentTime, lastShotTime
 	if not img:
 		return
 	
 	#@TODO : Check if it's to blit the box with all game image (buf) or all camera image (img).
 	box = graphics.Image.new(layerGroup["sideImageTracking"], 'L')
+	#This is a proccess that we can do one time. (Put somewhere!)
 	x = (layerGroup["cameraSize"][0]/2) - (targetImg.size[0]/2) - layerGroup["sideImageTracking"][0]
-	y = (layerGroup["cameraSize"][1]/2) - (layerGroup["sideImageTracking"][1] /2) 
+	y = (layerGroup["cameraSize"][1]/2) - (layerGroup["sideImageTracking"][1] /2)
+	
 	if FIRST_TIME:
-		print x,y
-		print x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1]
+		#print x,y
+		#print x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1]
+		firstCurrentTime = time.clock()
+		lastShotTime = time.clock()
 		FIRST_TIME = False
+	
+	game.checkEndOfGame()
+
 	
 	box.blit(img, source=((x,y),(x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1])))
 	data = getPixels(box, 8)
+	
 	buf.blit(img,target=layerGroup["cameraPosition"])
 	gg.drawTarget()
 	gg.drawShot()
 	
-	#gg.drawUfo(ufoList[0])
+	gg.drawUfo(ufoList[0])
 	handle_redraw(())
 
 	
@@ -178,7 +205,23 @@ class GameLogic(object):
 	def startGame(self):
 		self.createUfos()
 		gg.drawMain()
-		gg.start_camera()			
+		gg.start_camera()	
+
+	def checkEndOfGame(self):
+		#timeRemain = timeGame - int(time.clock() - firstCurrentTime)
+		timeRemain = 10
+		if self.ufosCountDown <= 0:
+			self.totalUfosLevel = int(self.totalUfosLevel * 1.2)
+			self.ufosCountDown = self.totalUfosLevel
+			self.level+=1
+			self.stopGame(WIN)
+		elif timeRemain == 0:
+			self.ufosCountDown = self.totalUfosLevel
+			self.stopGame(LOST)
+			
+	def stopGame(self,gameStatus):
+		pass
+			
 	
 	
 class GameGraphics(object):
@@ -193,14 +236,23 @@ class GameGraphics(object):
 		targetImg = graphics.Image.open(TARGET_IMG_FILE)
 		ufoImg =  graphics.Image.open(UFO_IMG_FILE)
 	
+		self.shotNormal = False
+		self.shotTrans = False
+		self.totalLoopsShotNormal = 0
+		self.totalLoopsShotTrans = 0
+		
+	
 	def drawCockpit(self):
 		buf.blit(self.topImg)
 		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))	
 	
 	def drawUfo(self,ufo):
-		#if DRAWING:
-		buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
-			
+		if DRAWING:
+			buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
+	
+	def stop_camera(self):
+		camera.stop_finder()
+		
 	def start_camera(self):
 		camera.start_finder(run,size=layerGroup["cameraSize"])
 	
@@ -209,8 +261,19 @@ class GameGraphics(object):
 	
 	def drawShot(self):
 		if DRAWING:
-			buf.blit(self.trans_shotImg,target=(screenSize[0]/2 - self.trans_shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.trans_shotImg.size[1]))
-			buf.blit(self.shotImg,target=(screenSize[0]/2 - self.shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.shotImg.size[1]))	
+			if self.shotNormal:
+				self.totalLoopsShotNormal+=1
+				buf.blit(self.shotImg,target=(screenSize[0]/2 - self.shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.shotImg.size[1]))
+				if self.totalLoopsShotNormal == 2:
+					self.shotNormal = False
+					self.totalLoopsShotNormal = 0
+			
+			if self.shotTrans:
+				self.totalLoopsShotTrans+=1
+				buf.blit(self.trans_shotImg,target=(screenSize[0]/2 - self.trans_shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.trans_shotImg.size[1]))
+				if self.totalLoopsShotTrans == 2:
+					self.shotTrans = False
+					self.totalLoopsShotTrans = 0
 	
 	def drawMain(self):
 		buf.clear(RGB_BLACK)
@@ -236,11 +299,17 @@ class Main(object):
 		global game
 		game = GameLogic()
 		
+		global timeGame
+		timeGame = 60
+		
 		global gg
 		gg = GameGraphics()
 		
 		global buf
 		buf=graphics.Image.new(screenSize)
+		
+		global timer
+		timer = e32.Ao_timer()
 		
 		self._splash = SplashScreen()
 		self._splash.execute()
@@ -271,6 +340,7 @@ class Main(object):
 		3: self.showHighScore}[self._mainScreen.current()]()
 	
 	def handle_quit(self):
+		camera.stop_finder()
 		app_lock.signal()
 		#appuifw.app.set_exit()
 		
