@@ -128,6 +128,7 @@ def run(img):
 	gg.drawShot(keyPressed=False)
 	
 	gg.drawUfo(ufoList[0])
+	gg.drawUfo(ufoList[1])
 	handle_redraw(())
 
 	
@@ -150,6 +151,9 @@ class Ufo(object):
 			
 		def getPosition(self):
 			return self.position
+		
+		def getFrameSize(self):
+			return self.frameWidth,self.frameHeight
 
 class SplashScreen(object):
 	def __init__(self):
@@ -191,7 +195,7 @@ class GameLogic(object):
 		self.ufosCountDown = 0
 		self.totalUfosLevel = 10
 		self.level = 1
-		self.maxUfoScreen = 5
+		self.maxUFOScreen = 2 #Default Value: 5
 		self.maxUFOSpeed = 4
 		self.minFarAwayFromTarget = 20;
 		self.maxFarAwayXFromTarget = 100;
@@ -200,7 +204,7 @@ class GameLogic(object):
 		self.ufosCountDown = self.totalUfosLevel
 	
 	def createUfos(self):
-		for i in range(self.maxUfoScreen):
+		for i in range(self.maxUFOScreen):
 			position = (random.randrange(0,layerGroup["cameraSize"][0]), random.randrange(0,layerGroup["cameraSize"][1]))
 			ufoList.append(Ufo(position,ufoImg.size,self.maxFarAwayXFromTarget,self.maxFarAwayYFromTarget,self.minFarAwayFromTarget,self.maxUFOSpeed))
 		
@@ -215,8 +219,9 @@ class GameLogic(object):
 			#if int(time.clock() - lastShotTime) > 2:
 			#	lastShotTime = time.clock()
 			gg.drawShot(keyPressed=True)
-				
-		
+			for i in range(self.maxUFOScreen):
+				if ufoList[i].isAlive and gg.detectCollision(ufoList[i]):
+					print "Collision"				
 
 	def checkEndOfGame(self):
 		#timeRemain = timeGame - int(time.clock() - firstCurrentTime)
@@ -252,16 +257,24 @@ class GameGraphics(object):
 		self.shotLR = False
 		self.totalLoopsShotNormal = 0
 		self.totalLoopsShotTrans = 0
-		
+	
+	
+	def detectCollision(self,ufo):
+		x,y = ufo.getPosition()
+		ufoW,ufoH = ufo.getFrameSize()
+		return False
+	    #@TODO : Think about some Detection collision code here.
+		# i f   ( M a t h . a b s ( g 2 Y   -   g 1 Y )   <   g 1 H   a n d 
+		#M a t h . a b s ( g 2 X   -   g 1 X )   <   g 1 W )   { 
+ 
 	
 	def drawCockpit(self):
 		buf.blit(self.topImg)
 		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))	
 	
 	def drawUfo(self,ufo):
-		pass
-		#if DRAWING:
-		#	buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
+		if DRAWING:
+			buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
 	
 	def stop_camera(self):
 		camera.stop_finder()
@@ -298,6 +311,7 @@ class GameGraphics(object):
 					if self.totalLoopsShotTrans == 2:
 						self.shotTrans = False
 						self.totalLoopsShotTrans = 0
+		
 	
 	def drawMain(self):
 		buf.clear(RGB_BLACK)
