@@ -30,6 +30,7 @@ import e32
 import camera
 import random
 import time
+import key_codes
 
 VERSION = '0.1'
 
@@ -65,7 +66,7 @@ targetImg = None
 
 
 #Bool
-DRAWING = False
+DRAWING = True
 FIRST_TIME = True
 
 layerGroup = {"cameraSize": (240,180),
@@ -116,6 +117,7 @@ def run(img):
 		FIRST_TIME = False
 	
 	game.checkEndOfGame()
+	game.keyInput()
 
 	
 	box.blit(img, source=((x,y),(x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1])))
@@ -123,7 +125,7 @@ def run(img):
 	
 	buf.blit(img,target=layerGroup["cameraPosition"])
 	gg.drawTarget()
-	gg.drawShot()
+	gg.drawShot(keyPressed=False)
 	
 	gg.drawUfo(ufoList[0])
 	handle_redraw(())
@@ -205,7 +207,16 @@ class GameLogic(object):
 	def startGame(self):
 		self.createUfos()
 		gg.drawMain()
-		gg.start_camera()	
+		gg.start_camera()
+	
+	def keyInput(self):
+		global lastShotTime
+		if keyboard.pressed(key_codes.EScancodeSelect):
+			#if int(time.clock() - lastShotTime) > 2:
+			#	lastShotTime = time.clock()
+			gg.drawShot(keyPressed=True)
+				
+		
 
 	def checkEndOfGame(self):
 		#timeRemain = timeGame - int(time.clock() - firstCurrentTime)
@@ -238,6 +249,7 @@ class GameGraphics(object):
 	
 		self.shotNormal = False
 		self.shotTrans = False
+		self.shotLR = False
 		self.totalLoopsShotNormal = 0
 		self.totalLoopsShotTrans = 0
 		
@@ -247,8 +259,9 @@ class GameGraphics(object):
 		buf.blit(self.bottonImg,target=(0,layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1]))	
 	
 	def drawUfo(self,ufo):
-		if DRAWING:
-			buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
+		pass
+		#if DRAWING:
+		#	buf.blit(ufoImg,source = ufo.getFrame(), target = ufo.getPosition())
 	
 	def stop_camera(self):
 		camera.stop_finder()
@@ -259,21 +272,32 @@ class GameGraphics(object):
 	def drawTarget(self):
 		buf.blit(targetImg,target=((layerGroup["cameraSize"][0]/2 - targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - targetImg.size[1]/2) + layerGroup["cameraPosition"][1]))
 	
-	def drawShot(self):
+	def drawShot(self,keyPressed=False):
 		if DRAWING:
-			if self.shotNormal:
-				self.totalLoopsShotNormal+=1
-				buf.blit(self.shotImg,target=(screenSize[0]/2 - self.shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.shotImg.size[1]))
-				if self.totalLoopsShotNormal == 2:
-					self.shotNormal = False
-					self.totalLoopsShotNormal = 0
+			if keyPressed:
+				if self.shotLR:
+					buf.blit(self.shotImg,target=(screenSize[0]/2 - self.shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.shotImg.size[1]))
+					self.shotNormal = True
+					self.shotLR = False
+				else:
+					buf.blit(self.trans_shotImg,target=(screenSize[0]/2 - self.trans_shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.trans_shotImg.size[1]))
+					self.shotTrans = True
+					self.shotLR = True
+					
+			else:
+				if self.shotNormal:
+					self.totalLoopsShotNormal+=1
+					buf.blit(self.shotImg,target=(screenSize[0]/2 - self.shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.shotImg.size[1]))
+					if self.totalLoopsShotNormal == 2:
+						self.shotNormal = False
+						self.totalLoopsShotNormal = 0
 			
-			if self.shotTrans:
-				self.totalLoopsShotTrans+=1
-				buf.blit(self.trans_shotImg,target=(screenSize[0]/2 - self.trans_shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.trans_shotImg.size[1]))
-				if self.totalLoopsShotTrans == 2:
-					self.shotTrans = False
-					self.totalLoopsShotTrans = 0
+				if self.shotTrans:
+					self.totalLoopsShotTrans+=1
+					buf.blit(self.trans_shotImg,target=(screenSize[0]/2 - self.trans_shotImg.size[0], layerGroup["cameraSize"][1] + layerGroup["cameraPosition"][1] - self.trans_shotImg.size[1]))
+					if self.totalLoopsShotTrans == 2:
+						self.shotTrans = False
+						self.totalLoopsShotTrans = 0
 	
 	def drawMain(self):
 		buf.clear(RGB_BLACK)
