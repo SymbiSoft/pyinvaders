@@ -141,13 +141,22 @@ class Ufo(object):
 			self.frameWidth,self.frameHeight  = ufoImgSize[0]/8 , ufoImgSize[1]
 			self.isAlive = True
 			self.speed = 0
+			self.count_frame_live = 0
 			while self.speed == 0:
 				self.speed = random.randrange(0,maxUFOSpeed)
 			self.aliveFrameSequence = [0,2,1]
-			self.currentFrame = 0
-		
+			self.currentFrame = random.choice(self.aliveFrameSequence)
+			
+			
 		def getFrame(self):
-			return (self.currentFrame * self.frameWidth,0,self.frameWidth,self.frameHeight)
+			if self.isAlive:
+				self.count_frame_live+=1
+				if self.count_frame_live == 3:
+					self.count_frame_live = 0
+					self.currentFrame = self.aliveFrameSequence[((self.aliveFrameSequence.index(self.currentFrame) + 1) % 3)]
+			else:
+				print "work for dead"
+			return (self.currentFrame * self.frameWidth,0,self.frameWidth*self.currentFrame+self.frameWidth,self.frameHeight)
 			
 		def getPosition(self):
 			return self.position
