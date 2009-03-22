@@ -142,24 +142,48 @@ class Ufo(object):
 			self.isAlive = True
 			self.speed = 0
 			self.count_frame_live = 0
+			self.countFrameExplosions = 0
+			self.count_frame_explosion = 0
+			self.newXY = (0,0)
 			while self.speed == 0:
 				self.speed = random.randrange(0,maxUFOSpeed)
-			self.aliveFrameSequence = [0,2,1]
-			self.currentFrame = random.choice(self.aliveFrameSequence)
+			self.frameSequence = self.setAliveFrameSequence()
+			self.currentFrame = random.choice(self.frameSequence)
 			
 			
+		def setAliveFrameSequence(self):
+			return [0,2,1]
+		
+		def setExplosionFrameSequence(self):
+			return [7,6,5,4,3]
+		
+		def crash(self,newXY):
+			self.isAlive = False
+			self.frameSequence = self.setExplosionFrameSequence()
+			self.countFrameExplosions = 0
+			self.newXY = newXY
+		
 		def getFrame(self):
 			if self.isAlive:
 				self.count_frame_live+=1
 				if self.count_frame_live == 3:
 					self.count_frame_live = 0
-					self.currentFrame = self.aliveFrameSequence[((self.aliveFrameSequence.index(self.currentFrame) + 1) % 3)]
+					self.currentFrame = self.frameSequence[((self.frameSequence.index(self.currentFrame) + 1) % 3)]
 			else:
-				print "work for dead"
+				if self.count_frame_explosion == 3:
+					self.count_frame_explosion = 0
+					self.currentFrame = self.frameSequence[((self.frameSequence.index(self.currentFrame) + 1) % 5)]
+				self.countFrameExplosions+=1
+				if self.countFrameExplosions== 4:
+					self.frameSequence = self.setAliveFrameSequence()
+					self.isAlive = True
+					self.position = (self.position[0] + self.newXY[0] , self.position[1] + self.newXY[1])
+					
 			return (self.currentFrame * self.frameWidth,0,self.frameWidth*self.currentFrame+self.frameWidth,self.frameHeight)
 			
 		def getPosition(self):
 			return self.position
+		
 		
 		def getFrameSize(self):
 			return self.frameWidth,self.frameHeight
