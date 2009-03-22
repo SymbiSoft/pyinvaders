@@ -75,7 +75,7 @@ layerGroup = {"cameraSize": (240,180),
 
 
 
-def handle_redraw(dummy=(0, 0, 0, 0)):
+def refreshScreen(dummy=(0, 0, 0, 0)):
     if not buf:
         return
     canvas.blit(buf)
@@ -129,7 +129,8 @@ def run(img):
 	
 	gg.drawUfo(ufoList[0])
 	gg.drawUfo(ufoList[1])
-	handle_redraw(())
+	gg.drawStatusLevel()
+	refreshScreen(())
 
 	
 class Ufo(object):
@@ -234,6 +235,7 @@ class GameLogic(object):
 		self.maxFarAwayXFromTarget = 100;
 		self.maxFarAwayYFromTarget = 60;
 		ufoList = []
+		self.timeRemain = 0
 		self.ufosCountDown = self.totalUfosLevel
 	
 	def createUfos(self):
@@ -254,17 +256,27 @@ class GameLogic(object):
 			gg.drawShot(keyPressed=True)
 			for i in range(self.maxUFOScreen):
 				if ufoList[i].isAlive and gg.detectCollision(ufoList[i]):
-					print "Collision"				
+					newPosition = random.randRange(0,4)
+					if newPosition == 0:
+						ufoList[i].crash(+layerGroup["cameraSize"][0],-layerGroup["cameraSize"][1])
+					elif newPosition == 1:
+						ufoList[i].crash(-layerGroup["cameraSize"][0],-layerGroup["cameraSize"][1])
+					elif newPosition == 2:
+						ufoList[i].crash(-layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1])
+					elif newPosition == 3:
+						ufoList[i].crash(+layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1])
+					self.ufosCountDown-=1
+					break
 
 	def checkEndOfGame(self):
 		#timeRemain = timeGame - int(time.clock() - firstCurrentTime)
-		timeRemain = 10
+		self.timeRemain = 10
 		if self.ufosCountDown <= 0:
 			self.totalUfosLevel = int(self.totalUfosLevel * 1.2)
 			self.ufosCountDown = self.totalUfosLevel
 			self.level+=1
 			self.stopGame(WIN)
-		elif timeRemain == 0:
+		elif self.timeRemain == 0:
 			self.ufosCountDown = self.totalUfosLevel
 			self.stopGame(LOST)
 			
@@ -300,6 +312,10 @@ class GameGraphics(object):
 		# i f   ( M a t h . a b s ( g 2 Y   -   g 1 Y )   <   g 1 H   a n d 
 		#M a t h . a b s ( g 2 X   -   g 1 X )   <   g 1 W )   { 
  
+	def drawStatusLevel(self):
+		buf.text((60,275),u""+str(game.ufosCountDown),fill=(0,140,140))
+		buf.text((150,278),u""+str(game.level),fill=(0,140,140))
+		buf.text((115,20),u""+str(game.timeRemain),fill=(0,140,140))
 	
 	def drawCockpit(self):
 		buf.blit(self.topImg)
