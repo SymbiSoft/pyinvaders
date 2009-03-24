@@ -1,6 +1,8 @@
 '''
 PyInvaders v0.1 - PyS60 Camera Tracking Game
 
+Copyright (c) 2009 Marcel Pinheiro Caraciolo, Marlon Luz 
+
 Marcel Pinheiro Caraciolo <caraciol@gmail.com>
 Marlon Luz <marlon.luz@gmail.com> (Author of the JavaME Real Invaders Game)
 
@@ -57,6 +59,7 @@ gg = None
 ufoList = None
 timer = None
 timeGame = None
+tracking = None
 firstCurrentTime = None
 lastShotTime = None
 
@@ -132,6 +135,8 @@ def run(img):
 	gg.drawStatusLevel()
 	refreshScreen(())
 
+class Tracking(object):
+	pass
 	
 class Ufo(object):
 		def __init__(self,position,ufoImgSize,maxFarAwayXFromTarget,maxFarAwayYFromTarget,minFarAwayFromTarget,maxUFOSpeed):
@@ -185,7 +190,6 @@ class Ufo(object):
 		def getPosition(self):
 			return self.position
 		
-		
 		def getFrameSize(self):
 			return self.frameWidth,self.frameHeight
 
@@ -229,6 +233,7 @@ class GameLogic(object):
 		self.ufosCountDown = 0
 		self.totalUfosLevel = 10
 		self.level = 1
+		self.timeGame = 60
 		self.maxUFOScreen = 2 #Default Value: 5
 		self.maxUFOSpeed = 4
 		self.minFarAwayFromTarget = 20;
@@ -256,20 +261,20 @@ class GameLogic(object):
 			gg.drawShot(keyPressed=True)
 			for i in range(self.maxUFOScreen):
 				if ufoList[i].isAlive and gg.detectCollision(ufoList[i]):
-					newPosition = random.randRange(0,4)
+					newPosition = random.randrange(0,4)
 					if newPosition == 0:
-						ufoList[i].crash(+layerGroup["cameraSize"][0],-layerGroup["cameraSize"][1])
+						ufoList[i].crash((+layerGroup["cameraSize"][0],-layerGroup["cameraSize"][1]))
 					elif newPosition == 1:
-						ufoList[i].crash(-layerGroup["cameraSize"][0],-layerGroup["cameraSize"][1])
+						ufoList[i].crash((-layerGroup["cameraSize"][0],-layerGroup["cameraSize"][1]))
 					elif newPosition == 2:
-						ufoList[i].crash(-layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1])
+						ufoList[i].crash((-layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1]))
 					elif newPosition == 3:
-						ufoList[i].crash(+layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1])
+						ufoList[i].crash((+layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1]))
 					self.ufosCountDown-=1
 					break
 
 	def checkEndOfGame(self):
-		#timeRemain = timeGame - int(time.clock() - firstCurrentTime)
+		#timeRemain = self.timeGame - int(time.clock() - firstCurrentTime)
 		self.timeRemain = 10
 		if self.ufosCountDown <= 0:
 			self.totalUfosLevel = int(self.totalUfosLevel * 1.2)
@@ -305,12 +310,12 @@ class GameGraphics(object):
 	
 	
 	def detectCollision(self,ufo):
-		x,y = ufo.getPosition()
+		ufoX,ufoY = ufo.getPosition()
 		ufoW,ufoH = ufo.getFrameSize()
+		targetX,targetY = ((layerGroup["cameraSize"][0]/2 - targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - targetImg.size[1]/2) + layerGroup["cameraPosition"][1])
+		if (abs(ufoY - targetY) < targetImg.size[1]) and (abs(ufoX - targetX) < targetImg.size[0]):
+			return True	
 		return False
-	    #@TODO : Think about some Detection collision code here.
-		# i f   ( M a t h . a b s ( g 2 Y   -   g 1 Y )   <   g 1 H   a n d 
-		#M a t h . a b s ( g 2 X   -   g 1 X )   <   g 1 W )   { 
  
 	def drawStatusLevel(self):
 		buf.text((60,275),u""+str(game.ufosCountDown),fill=(0,140,140))
@@ -382,6 +387,9 @@ class Main(object):
 		canvas=appuifw.Canvas(event_callback=keyboard.handle_event, redraw_callback=None)
 		appuifw.app.body=canvas
 		screenSize = canvas.size
+		
+		global tracking
+		tracking = Tracking()
 		
 		global game
 		game = GameLogic()
