@@ -310,14 +310,24 @@ class GameGraphics(object):
 	
 	
 	def detectCollision(self,ufo):
-		ufoX,ufoY = ufo.getPosition()
-		ufoW,ufoH = ufo.getFrameSize()
-		targetX,targetY = ((layerGroup["cameraSize"][0]/2 - targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - targetImg.size[1]/2) + layerGroup["cameraPosition"][1])
+		ufoLeft,ufoTop = ufo.getPosition()
+		ufoRight,ufoBottom = (ufoLeft + ufo.getFrameSize()[0], ufoTop +  ufo.getFrameSize()[1])
+		targetLeft,targetTop = ((layerGroup["cameraSize"][0]/2 - targetImg.size[0]/2) + layerGroup["cameraPosition"][0], (layerGroup["cameraSize"][1]/2 - targetImg.size[1]/2) + layerGroup["cameraPosition"][1])
+		targetRight,targetBottom = (targetLeft + targetImg.size[0], targetTop + targetImg.size[1])
+		if not ((targetLeft >= ufoRight) or (targetTop >= ufoBottom) or (targetRight <= ufoLeft) or (targetBottom <= ufoTop)):
+			return True
+		return False
+
+		
+		
 		if (abs(ufoY - targetY) < targetImg.size[1]) and (abs(ufoX - targetX) < targetImg.size[0]):
 			return True	
 		return False
  
 	def drawStatusLevel(self):
+		buf.rectangle((55,263,75,280), fill=RGB_BLACK)
+		buf.rectangle((145,263,165,280), fill=RGB_BLACK)
+		buf.rectangle((110,10,130,25), fill=RGB_BLACK)
 		buf.text((60,275),u""+str(game.ufosCountDown),fill=(0,140,140))
 		buf.text((150,278),u""+str(game.level),fill=(0,140,140))
 		buf.text((115,20),u""+str(game.timeRemain),fill=(0,140,140))
