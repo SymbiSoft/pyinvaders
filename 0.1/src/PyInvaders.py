@@ -317,12 +317,6 @@ class GameGraphics(object):
 		if not ((targetLeft >= ufoRight) or (targetTop >= ufoBottom) or (targetRight <= ufoLeft) or (targetBottom <= ufoTop)):
 			return True
 		return False
-
-		
-		
-		if (abs(ufoY - targetY) < targetImg.size[1]) and (abs(ufoX - targetX) < targetImg.size[0]):
-			return True	
-		return False
  
 	def drawStatusLevel(self):
 		buf.rectangle((55,263,75,280), fill=RGB_BLACK)
@@ -445,9 +439,14 @@ class Main(object):
 		3: self.showHighScore}[self._mainScreen.current()]()
 	
 	def handle_quit(self):
-		camera.stop_finder()
-		app_lock.signal()
-		#appuifw.app.set_exit()
+		if appuifw.app.body == self._mainScreen:
+			app_lock.signal()
+			#appuifw.app.set_exit()
+		elif appuifw.app.body == canvas:
+			camera.stop_finder()
+			self.show_menu()
+			
+			
 		
 	def show_menu(self):
 		appuifw.app.screen = 'normal'
