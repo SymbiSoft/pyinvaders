@@ -70,7 +70,7 @@ targetImg = None
 
 #Bool
 DRAWING = True
-FIRST_TIME = True
+FIRST_TIME = False
 
 layerGroup = {"cameraSize": (240,180),
 			  "cameraPosition": (0,40),
@@ -249,6 +249,8 @@ class GameLogic(object):
 			ufoList.append(Ufo(position,ufoImg.size,self.maxFarAwayXFromTarget,self.maxFarAwayYFromTarget,self.minFarAwayFromTarget,self.maxUFOSpeed))
 		
 	def startGame(self):
+		global FIRST_TIME
+		FIRST_TIME = True
 		self.createUfos()
 		gg.drawMain()
 		gg.start_camera()
@@ -272,7 +274,21 @@ class GameLogic(object):
 						ufoList[i].crash((+layerGroup["cameraSize"][0],+layerGroup["cameraSize"][1]))
 					self.ufosCountDown-=1
 					break
-
+		elif keyboard.pressed(key_codes.EScancodeLeftSoftkey):
+			if appuifw.query(u"Are you sure about restart the game ?", "query"):
+				gg.stop_camera()
+				self.nextLevel()
+		
+	
+	def nextLevel(self):
+		global ufoList
+		self.totalUfosLevel = 10
+		self.level = 1
+		self.ufosCountDown = self.totalUfosLevel
+		ufoList = []
+		self.startGame()
+		
+		
 	def checkEndOfGame(self):
 		#timeRemain = self.timeGame - int(time.clock() - firstCurrentTime)
 		self.timeRemain = 10
@@ -443,7 +459,7 @@ class Main(object):
 			app_lock.signal()
 			#appuifw.app.set_exit()
 		elif appuifw.app.body == canvas:
-			camera.stop_finder()
+			gg.stop_camera()
 			self.show_menu()
 			
 			
