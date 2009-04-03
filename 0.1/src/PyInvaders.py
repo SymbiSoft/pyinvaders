@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 '''
 
 
-#@TODO :  SoftKey Labels, transparency gifs, Ufo threading, 
+#@TODO :  SoftKey Labels, transparency gifs, Ufo threading (Explosion sequence is not working), tracking system, menu actions
 
 
 import sys
@@ -130,7 +130,9 @@ def run(img):
 	
 	#tracking.setNewImage(data)
 	data = getPixels(box, 8)
-	print struct.unpack('3B', data[0:3])
+	#print struct.unpack('3B', data[0:3])
+	
+	
 	buf.blit(img,target=layerGroup["cameraPosition"])
 	gg.drawTarget()
 	gg.drawShot(keyPressed=False)
@@ -171,7 +173,29 @@ class Tracking(object):
 				k = 0
 	
 	def sumOfAbsoluteDifferences(self,orientation,index):
-		pass
+		SAD = 0.0
+		if orientation == LINE:
+			sadPreviousImage = self.linePreviousImage
+			sadCurrentImage = self.lineCurrentImage
+		elif orientation == COLUMN:
+			sadPreviousImage = self.columnPreviousImage
+			sadCurrentImage = self.columnCurrentImage
+		
+		desvio = abs(index)
+		if index == 0:
+			for i in range(self.side):
+				SAD += (sadPreviousImage[i] - sadCurrentImage[i]) * (sadPreviousImage[i] - sadCurrentImage[i])
+			SAD = SAD / side
+		elif ((index > 0) and (orientation == LINE)) or ((index < 0) and (orientation == COLUMN)):
+			for i in range(self.side-desvio):
+				SAD += (sadPreviousImage[i+desvio] - sadCurrentImage[i]) * (sadPreviousImage[i+desvio] - sadCurrentImage[i])
+			SAD = SAD/side-desvio
+		else:
+			for i in range(self.side-desvio):
+				SAD += (sadPreviousImage[i] - sadCurrentImage[i+desvio]) * (sadPreviousImage[i] - sadCurrentImage[i+desvio])
+			SAD = SAD/side-desvio
+			
+		return SAD
 	
 	def getDeviationY(self):
 		minSAD = self.sumOfAbsoluteDifferences(LINE,self.deviations[0])
