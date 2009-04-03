@@ -101,7 +101,9 @@ def getPixels(im, bpp=24):
     return zlib.decompress(''.join(chunk))
 
 
+
 def run(img):
+	import struct
 	global FIRST_TIME, firstCurrentTime, lastShotTime
 	if not img:
 		return
@@ -123,9 +125,12 @@ def run(img):
 	game.keyInput()
 
 	
-	box.blit(img, source=((x,y),(x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1])))
-	data = getPixels(box, 8)
+	box.blit(img, source=((x,y,x + layerGroup["sideImageTracking"][0], y +layerGroup["sideImageTracking"][1])))
+	#data = [ r for r,g,b in box.getpixel([(x,y) for x in range(layerGroup["sideImageTracking"][0]) for y in range(layerGroup["sideImageTracking"][1])])]
 	
+	#tracking.setNewImage(data)
+	data = getPixels(box, 8)
+	print struct.unpack('3B', data[0:3])
 	buf.blit(img,target=layerGroup["cameraPosition"])
 	gg.drawTarget()
 	gg.drawShot(keyPressed=False)
@@ -136,7 +141,60 @@ def run(img):
 	refreshScreen(())
 
 class Tracking(object):
-	pass
+	LINE,COLUMN = (0,1)
+	def __init__(self):
+		self.side = layerGroup["sideImageTracking"][0]
+		self.lineCurrentImage =[]
+		self.columnCurrentImage = []
+		self.linePreviousImage = []
+		self.columnPreviousImage = []
+		self.deviations = [-20, -16, -13, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 13, 16, 20]
+		
+	def setNewImage(self,newImage):
+		self.linePreviousImage = self.lineCurrentImage[:]
+		self.columnPreviousImage = self.columnCurrentImage[:]
+		sum = 0
+		j  = 0
+		k = 0
+		self.lineCurrentImage = [0] * self.side
+		self.columnCurrentImage = [0] * self.side
+		
+		for i in range(len(newImage)):
+			sum += newImage[i]
+			if i % self.side == 0:
+				self.lineCurrentImage[j] = sum
+				sum = 0
+				j+=1
+			self.columnCurrentImage[k] += newImage[i]
+			k+=1
+			if k == self.side: 
+				k = 0
+	
+	def sumOfAbsoluteDifferences(self,orientation,index):
+		pass
+	
+	def getDeviationY(self):
+		minSAD = self.sumOfAbsoluteDifferences(LINE,self.deviations[0])
+		minDeviation = self.deviations[0]
+		for i in range(1,len(self.deviations)):
+			sad = self.sumOfAbsoluteDifferences(LINE,self.deviations[i])
+			if sad < minSAD:
+				minSAD = sad
+				minDeviation = self.deviations[i]
+				
+		return minDeviation * -1
+		
+		
+	def getDeviationX(self):
+		minSAD = self.sumOfAbsoluteDifferences(COLUMN,self.deviations[0])
+		minDeviation = self.deviations[0]
+		for i in range(1,len(self.deviations)):
+			sad = self.sumOfAbsoluteDifferences(COLUMN,self.deviations[i])
+			if sad < minSAD:
+				minSAD = sad
+				minDeviation = self.deviations[i]
+				
+		return minDeviation
 	
 class Ufo(object):
 		def __init__(self,position,ufoImgSize,maxFarAwayXFromTarget,maxFarAwayYFromTarget,minFarAwayFromTarget,maxUFOSpeed):
@@ -166,23 +224,27 @@ class Ufo(object):
 		def crash(self,newXY):
 			self.isAlive = False
 			self.frameSequence = self.setExplosionFrameSequence()
+			self.currentFrame = self.frameSequence[0]
 			self.countFrameExplosions = 0
 			self.newXY = newXY
 		
 		def getFrame(self):
 			if self.isAlive:
 				self.count_frame_live+=1
-				if self.count_frame_live == 3:
+				if self.count_frame_live == 2:
 					self.count_frame_live = 0
 					self.currentFrame = self.frameSequence[((self.frameSequence.index(self.currentFrame) + 1) % 3)]
 			else:
-				if self.count_frame_explosion == 3:
+				self.count_frame_explosion+=1
+				if self.count_frame_explosion == 2:
 					self.count_frame_explosion = 0
 					self.currentFrame = self.frameSequence[((self.frameSequence.index(self.currentFrame) + 1) % 5)]
-				self.countFrameExplosions+=1
-				if self.countFrameExplosions== 4:
+					self.countFrameExplosions+=1
+				if self.countFrameExplosions == 4 and self.count_frame_explosion == 2:
 					self.frameSequence = self.setAliveFrameSequence()
 					self.isAlive = True
+					self.currentFrame = random.choice(self.frameSequence)
+					self.count_frame_live = 0
 					self.position = (self.position[0] + self.newXY[0] , self.position[1] + self.newXY[1])
 					
 			return (self.currentFrame * self.frameWidth,0,self.frameWidth*self.currentFrame+self.frameWidth,self.frameHeight)
@@ -459,8 +521,9 @@ class Main(object):
 			app_lock.signal()
 			#appuifw.app.set_exit()
 		elif appuifw.app.body == canvas:
-			gg.stop_camera()
-			self.show_menu()
+			if appuifw.query(u"Are you sure about quit the game ?", "query"):
+				gg.stop_camera()
+				self.show_menu()
 			
 			
 		
